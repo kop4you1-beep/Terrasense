@@ -1,0 +1,393 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <meta name="theme-color" content="#0b1017" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <title>TerraSense — Pomiar 2D Koparki</title>
+  <style>
+    :root {
+      --bg: #0b1017;
+      --panel: #131c27;
+      --panel-2: #182433;
+      --border: #26364a;
+      --text: #eef4fa;
+      --muted: #8fa3b8;
+      --accent: #38bdf8;
+      --accent-2: #f59e0b;
+      --ok: #22c55e;
+      --warn: #ef4444;
+    }
+
+    * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+    body {
+      margin: 0;
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100dvh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    header {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      align-items: center;
+      justify-content: space-between;
+      padding: 12px 14px;
+      background: var(--panel);
+      border-bottom: 1px solid var(--border);
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-weight: 800;
+      font-size: 1.1rem;
+      letter-spacing: 0.02em;
+    }
+
+    .dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: var(--ok);
+      box-shadow: 0 0 10px var(--ok);
+    }
+
+    .controls {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      width: 100%;
+    }
+
+    @media (min-width: 720px) {
+      .controls { width: auto; }
+    }
+
+    button {
+      flex: 1;
+      background: var(--panel-2);
+      color: var(--text);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 11px 14px;
+      font-size: 0.92rem;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    button.primary {
+      background: #0284c7;
+      border-color: #38bdf8;
+      color: #fff;
+    }
+
+    button.warn {
+      background: #78350f;
+      border-color: var(--accent-2);
+      color: #fef3c7;
+    }
+
+    main {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      padding: 12px;
+      flex: 1;
+    }
+
+    .hero-depth {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 14px 16px;
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    .hero-label {
+      font-size: 0.85rem;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      font-weight: 700;
+    }
+
+    .hero-val {
+      font-size: 2.3rem;
+      font-weight: 900;
+      font-variant-numeric: tabular-nums;
+      color: #38bdf8;
+    }
+
+    .card {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    canvas {
+      width: 100%;
+      height: 290px;
+      background: #070b10;
+      border-radius: 10px;
+      border: 1px solid #1d2a3a;
+      display: block;
+    }
+
+    .mini-stats {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 10px;
+    }
+
+    .stat {
+      background: var(--panel-2);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 10px 12px;
+    }
+
+    .stat-k { font-size: 0.76rem; color: var(--muted); }
+    .stat-v { font-size: 1.15rem; font-weight: 800; font-variant-numeric: tabular-nums; margin-top: 2px; }
+
+    .nodes {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 8px;
+    }
+
+    .node {
+      background: var(--panel-2);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 9px 10px;
+      font-size: 0.82rem;
+    }
+
+    .node-head {
+      display: flex;
+      justify-content: space-between;
+      font-weight: 700;
+      margin-bottom: 4px;
+    }
+
+    .tag {
+      font-size: 0.7rem;
+      padding: 1px 6px;
+      border-radius: 999px;
+      background: #1e293b;
+      color: var(--muted);
+    }
+
+    .tag.ok {
+      background: rgba(34, 197, 94, 0.18);
+      color: #86efac;
+    }
+
+    .status-line {
+      font-size: 0.78rem;
+      color: var(--muted);
+      padding: 0 2px;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="brand">
+      <span class="dot"></span>
+      <span>TerraSense</span>
+    </div>
+    <div class="controls">
+      <button id="btnBle" class="primary">Połącz BLE</button>
+      <button id="btnZero" class="warn">Zeruj poziom</button>
+      <button id="btnDemo">Demo</button>
+    </div>
+  </header>
+
+  <main>
+    <div class="hero-depth">
+      <div>
+        <div class="hero-label">Głębokość / wysokość zęba</div>
+        <div class="status-line" id="statusText">Tryb gotowości · Chrome na Androidzie dla BLE</div>
+      </div>
+      <div class="hero-val" id="depthVal">+0.00 m</div>
+    </div>
+
+    <section class="card">
+      <canvas id="view2d" width="760" height="360"></canvas>
+      <div class="mini-stats">
+        <div class="stat">
+          <div class="stat-k">Zasięg poziomy</div>
+          <div class="stat-v" id="reachVal">0.00 m</div>
+        </div>
+        <div class="stat">
+          <div class="stat-k">Kąt łyżki (wzgl. 0)</div>
+          <div class="stat-v" id="angleVal">0.0°</div>
+        </div>
+      </div>
+    </section>
+
+    <section class="card">
+      <div class="nodes" id="nodesBox"></div>
+    </section>
+  </main>
+
+  <script>
+    const SERVICE_UUID = "6e400001-b5a3-f393-e0a9-e50e24dcca9e";
+    const CHAR_UUID    = "6e400003-b5a3-f393-e0a9-e50e24dcca9e";
+
+    const L1 = 3.20; // wysiegnik [m]
+    const L2 = 1.85; // ramie [m]
+    const L3 = 0.95; // lyzka [m]
+
+    const sensors = [
+      { id: 1, label: "Węzeł 1 · Wysięgnik", pitch: 24, zero: 0, ok: false },
+      { id: 2, label: "Węzeł 2 · Ramię",     pitch: -52, zero: 0, ok: false },
+      { id: 3, label: "Węzeł 3 · Łyżka",     pitch: -20, zero: 0, ok: false },
+      { id: 4, label: "Węzeł 4 · Rezerwa",    pitch: 0, zero: 0, ok: false }
+    ];
+
+    let demo = false;
+    let phase = 0;
+    let baseY = 0;
+
+    const canvas = document.getElementById("view2d");
+    const ctx = canvas.getContext("2d");
+    const statusText = document.getElementById("statusText");
+
+    function parsePacket(str) {
+      const mId = str.match(/N(\d+)/i);
+      const mP  = str.match(/P:([-\d.]+)/i);
+      if (!mId || !mP) return;
+      const s = sensors.find(x => x.id === parseInt(mId[1], 10));
+      if (!s) return;
+      s.pitch = parseFloat(mP[1]);
+      s.ok = true;
+    }
+
+    async function connectBLE() {
+      if (!navigator.bluetooth) {
+        statusText.textContent = "Brak Web Bluetooth w tej przeglądarce (użyj Chrome na Androidzie).";
+        return;
+      }
+      try {
+        statusText.textContent = "Szukanie Excavator_Node_...";
+        const dev = await navigator.bluetooth.requestDevice({
+          filters: [{ namePrefix: "Excavator_Node_" }],
+          optionalServices: [SERVICE_UUID]
+        });
+        const gatt = await dev.gatt.connect();
+        const svc = await gatt.getPrimaryService(SERVICE_UUID);
+        const ch = await svc.getCharacteristic(CHAR_UUID);
+        await ch.startNotifications();
+        ch.addEventListener("characteristicvaluechanged", e => {
+          parsePacket(new TextDecoder().decode(e.target.value));
+        });
+        statusText.textContent = `Połączono z: ${dev.name}`;
+      } catch (err) {
+        statusText.textContent = `BLE: ${err.message}`;
+      }
+    }
+
+    function calcArm() {
+      const a1 = ((sensors[0].pitch - sensors[0].zero) * Math.PI) / 180;
+      const a2 = ((sensors[1].pitch - sensors[1].zero) * Math.PI) / 180;
+      const a3 = ((sensors[2].pitch - sensors[2].zero) * Math.PI) / 180;
+
+      const x1 = L1 * Math.cos(a1), y1 = L1 * Math.sin(a1);
+      const x2 = x1 + L2 * Math.cos(a2), y2 = y1 + L2 * Math.sin(a2);
+      const x3 = x2 + L3 * Math.cos(a3), y3 = y2 + L3 * Math.sin(a3);
+
+      return { x1, y1, x2, y2, x3, y3, relY: y3 - baseY, bucketDeg: (a3 * 180) / Math.PI };
+    }
+
+    function render(arm) {
+      const w = canvas.width, h = canvas.height;
+      ctx.clearRect(0, 0, w, h);
+
+      const ox = 150, oy = 165, sc = 52;
+      const pt = (mx, my) => ({ x: ox + mx * sc, y: oy - my * sc });
+
+      // Poziom bazowy
+      const ref = pt(0, baseY);
+      ctx.save();
+      ctx.setLineDash([6, 6]);
+      ctx.strokeStyle = "#f59e0b";
+      ctx.lineWidth = 1.5;
+      ctx.beginPath(); ctx.moveTo(20, ref.y); ctx.lineTo(w - 20, ref.y); ctx.stroke();
+      ctx.restore();
+
+      const p0 = pt(0, 0), p1 = pt(arm.x1, arm.y1), p2 = pt(arm.x2, arm.y2), p3 = pt(arm.x3, arm.y3);
+
+      ctx.lineCap = "round";
+      ctx.strokeStyle = "#38bdf8"; ctx.lineWidth = 9;
+      ctx.beginPath(); ctx.moveTo(p0.x, p0.y); ctx.lineTo(p1.x, p1.y); ctx.stroke();
+
+      ctx.strokeStyle = "#60a5fa"; ctx.lineWidth = 7;
+      ctx.beginPath(); ctx.moveTo(p1.x, p1.y); ctx.lineTo(p2.x, p2.y); ctx.stroke();
+
+      ctx.strokeStyle = "#fbbf24"; ctx.lineWidth = 6;
+      ctx.beginPath(); ctx.moveTo(p2.x, p2.y); ctx.lineTo(p3.x, p3.y); ctx.stroke();
+
+      ctx.fillStyle = "#ef4444";
+      ctx.beginPath(); ctx.arc(p3.x, p3.y, 7, 0, Math.PI * 2); ctx.fill();
+
+      const sgn = arm.relY >= 0 ? "+" : "";
+      document.getElementById("depthVal").textContent = `${sgn}${arm.relY.toFixed(2)} m`;
+      document.getElementById("reachVal").textContent = `${arm.x3.toFixed(2)} m`;
+      document.getElementById("angleVal").textContent = `${arm.bucketDeg.toFixed(1)}°`;
+
+      const box = document.getElementById("nodesBox");
+      box.innerHTML = sensors.map(s => `
+        <div class="node">
+          <div class="node-head">
+            <span>${s.label}</span>
+            <span class="tag ${s.ok ? "ok" : ""}">${s.ok ? "BLE" : (demo ? "DEMO" : "—")}</span>
+          </div>
+          <div>Kąt: <b>${(s.pitch - s.zero).toFixed(1)}°</b></div>
+        </div>
+      `).join("");
+    }
+
+    function loop() {
+      if (demo) {
+        phase += 0.025;
+        sensors[0].pitch = 24 + Math.sin(phase) * 14;
+        sensors[1].pitch = -52 + Math.cos(phase * 1.1) * 16;
+        sensors[2].pitch = -20 + Math.sin(phase * 0.9) * 18;
+      }
+      render(calcArm());
+      requestAnimationFrame(loop);
+    }
+
+    document.getElementById("btnBle").addEventListener("click", connectBLE);
+    document.getElementById("btnZero").addEventListener("click", () => {
+      const arm = calcArm();
+      baseY = arm.y3;
+      sensors.forEach(s => s.zero = s.pitch);
+      statusText.textContent = "Wyzerowano poziom bazowy (0.00 m).";
+    });
+    document.getElementById("btnDemo").addEventListener("click", () => {
+      demo = !demo;
+      statusText.textContent = demo ? "Włączono tryb demo." : "Tryb demo wyłączony.";
+    });
+
+    loop();
+  </script>
+</body>
+</html>
